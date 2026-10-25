@@ -1,0 +1,69 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>Admin</title><link rel="stylesheet" href="style.css"></head>
+<body><div class="wrap wide" id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script>
+const sb=supabase.createClient(CFG.url,CFG.key);
+const app=document.getElementById('app');
+const e=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ST=['Menunggu berkas','Berkas lengkap','Dikerjakan','Revisi','Selesai'];
+const link=tk=>new URL('index.html?t='+tk,location.href).href;
+let TPL=[];
+async function init(){const {data}=await sb.auth.getSession();data.session?home():login();}
+function login(){app.innerHTML=`<div class="wrap"><h1>Masuk</h1><p class="mute">Khusus pemilik.</p><div class="card">
+ <label>Email</label><input id="em" type="email"><label>Kata sandi</label><input id="pw" type="password">
+ <button class="pri" id="go">Masuk</button></div></div>`;
+ document.getElementById('go').onclick=async()=>{const {error}=await sb.auth.signInWithPassword({email:em.value,password:pw.value});error?alert('Email atau kata sandi salah.'):home();};}
+async function home(){
+  const [o,t]=await Promise.all([sb.from('orders').select('*,items(id,file_path)').order('created_at',{ascending:false}),sb.from('templates').select('*').order('id')]);
+  TPL=t.data||[];const L=o.data||[];
+  app.innerHTML=`<div class="row"><h1>Order klien</h1><div><button class="pri" id="nw">+ Order baru</button> <button id="lo">Keluar</button></div></div>
+  ${L.length?L.map(r=>{const n=r.items.filter(i=>i.file_path).length,tot=r.items.length;
+   return `<a class="card ord" href="#" data-id="${r.id}"><div class="row"><b>${e(r.klien)}</b><span class="tag">${e(r.status)}</span></div>
+   <div class="mute">${e(r.layanan||'')} · ${e(r.judul||'')}${r.deadline?' · deadline '+r.deadline:''}</div>
+   <div class="bar"><i style="width:${tot?n/tot*100:0}%"></i></div><div class="mute">${n}/${tot} berkas</div></a>`}).join(''):'<p class="mute">Belum ada order.</p>'}`;
+  nw.onclick=form;lo.onclick=async()=>{await sb.auth.signOut();login();};
+  app.querySelectorAll('a.ord').forEach(a=>a.onclick=ev=>{ev.preventDefault();detail(a.dataset.id)});
+}
+function form(){
+  app.innerHTML=`<button id="bk">← Kembali</button><h1 style="margin-top:14px">Order baru</h1><div class="card"><div class="grid">
+  <div><label>Nama klien</label><input id="k"></div><div><label>Jenis layanan</label><select id="l">${TPL.map(x=>`<option>${e(x.nama)}</option>`).join('')}<option>Lainnya</option></select></div>
+  <div><label>Judul / topik</label><input id="j"></div><div><label>Deadline</label><input id="d" type="date"></div></div>
+  <label>Daftar berkas yang diminta (satu baris satu berkas)</label><textarea id="it" rows="6"></textarea>
+  <button class="pri" id="sv">Buat order & link</button></div>`;
+  const fill=()=>{const x=TPL.find(z=>z.nama==l.value);it.value=x?x.items.join('\n'):''};l.onchange=fill;fill();
+  bk.onclick=home;
+  sv.onclick=async()=>{
+    const names=it.value.split('\n').map(s=>s.trim()).filter(Boolean);
+    if(!k.value.trim()||!names.length)return alert('Nama klien dan minimal satu berkas wajib diisi.');
+    const {data,error}=await sb.from('orders').insert({klien:k.value.trim(),layanan:l.value,judul:j.value,deadline:d.value||null}).select().single();
+    if(error)return alert(error.message);
+    await sb.from('items').insert(names.map((nama,urut)=>({order_id:data.id,nama,urut})));
+    detail(data.id);};
+}
+async function detail(id){
+  const {data:o}=await sb.from('orders').select('*,items(*)').eq('id',id).single();
+  o.items.sort((a,b)=>a.urut-b.urut);const lk=link(o.token);
+  const msg=encodeURIComponent(`Halo kak ${o.klien}, pembayaran sudah kami terima. Silakan kirim berkas yang dibutuhkan lewat link ini ya:\n${lk}`);
+  app.innerHTML=`<button id="bk">← Kembali</button><div class="row" style="margin-top:14px"><div><h1>${e(o.klien)}</h1><div class="mute">${e(o.layanan||'')} · ${e(o.judul||'')}</div></div>
+  <select id="st" style="width:auto">${ST.map(s=>`<option ${s==o.status?'selected':''}>${s}</option>`).join('')}</select></div>
+  <div class="card"><label>Link klien</label><input id="lk" value="${e(lk)}" readonly>
+  <button id="cp">Salin link</button> <a class="btn" target="_blank" href="https://wa.me/?text=${msg}">Kirim lewat WA</a></div>
+  <div class="card">${o.items.map(i=>`<div class="item ${i.file_path?'done':''}"><div class="box">${i.file_path?'✓':''}</div>
+  <div class="grow"><b>${e(i.nama)}</b>${i.file_name?`<div class="fn">${e(i.file_name)} · ${new Date(i.uploaded_at).toLocaleString('id-ID')}</div>`:'<div class="mute">Belum dikirim</div>'}</div>
+  ${i.file_path?`<button class="sm" data-p="${e(i.file_path)}" data-n="${e(i.file_name)}">Unduh</button>`:''}</div>`).join('')}</div>
+  <button id="rm" class="sm" style="color:var(--acc)">Hapus order</button>`;
+  bk.onclick=home;
+  st.onchange=()=>sb.from('orders').update({status:st.value}).eq('id',id);
+  cp.onclick=()=>{navigator.clipboard.writeText(lk);cp.textContent='Tersalin ✓'};
+  app.querySelectorAll('button[data-p]').forEach(b=>b.onclick=async()=>{
+    const {data,error}=await sb.storage.from(CFG.bucket).createSignedUrl(b.dataset.p,120,{download:b.dataset.n});
+    error?alert(error.message):location.href=data.signedUrl;});
+  rm.onclick=async()=>{if(!confirm('Hapus order ini beserta daftar berkasnya?'))return;
+    const ps=o.items.map(i=>i.file_path).filter(Boolean);if(ps.length)await sb.storage.from(CFG.bucket).remove(ps);
+    await sb.from('orders').delete().eq('id',id);home();};
+}
+init();
+</script></body></html>

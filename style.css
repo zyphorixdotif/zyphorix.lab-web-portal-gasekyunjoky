@@ -1,0 +1,28 @@
+:root{--bg:#f6f2ea;--card:#fffdf8;--ink:#201c17;--mute:#7a7266;--line:#e4ddd0;--acc:#a8472a;--ok:#3f6b4a}
+@media(prefers-color-scheme:dark){:root{--bg:#1a1714;--card:#231f1b;--ink:#efe9de;--mute:#a39a8b;--line:#38322b;--acc:#d9805f;--ok:#7fb48b}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Segoe UI",system-ui,sans-serif}
+.wrap{max-width:640px;margin:0 auto;padding:32px 18px 64px}
+.wide{max-width:900px}
+h1,h2{font-family:Georgia,"Times New Roman",serif;font-weight:600;margin:0 0 6px;letter-spacing:-.01em}
+h1{font-size:28px}h2{font-size:20px}
+.mute{color:var(--mute);font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:12px 0}
+.row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.bar{height:6px;background:var(--line);border-radius:9px;overflow:hidden;margin:10px 0 4px}
+.bar i{display:block;height:100%;background:var(--ok)}
+.item{display:flex;gap:12px;align-items:flex-start;padding:14px 0;border-top:1px solid var(--line)}
+.item:first-child{border-top:0}
+.box{flex:none;width:22px;height:22px;border:2px solid var(--line);border-radius:6px;margin-top:2px;display:grid;place-items:center;color:#fff;font-size:14px}
+.done .box{background:var(--ok);border-color:var(--ok)}
+.grow{flex:1;min-width:0}
+.fn{font-size:13px;color:var(--ok);word-break:break-all}
+button,.btn{font:inherit;font-size:14px;padding:8px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;text-decoration:none;display:inline-block}
+.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.sm{padding:5px 10px;font-size:13px}
+input,select,textarea{font:inherit;width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);margin:4px 0 12px}
+label{font-size:13px;color:var(--mute)}
+.tag{font-size:12px;padding:2px 9px;border-radius:99px;background:var(--line)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+@media(max-width:560px){.grid{grid-template-columns:1fr}}
+a.ord{display:block;color:inherit;text-decoration:none}
