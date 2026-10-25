@@ -15,7 +15,7 @@ async function init(){const {data}=await sb.auth.getSession();data.session?home(
 function login(){app.innerHTML=`<div class="wrap"><h1>Masuk</h1><p class="mute">Khusus pemilik.</p><div class="card">
  <label>Email</label><input id="em" type="email"><label>Kata sandi</label><input id="pw" type="password">
  <button class="pri" id="go">Masuk</button></div></div>`;
- document.getElementById('go').onclick=async()=>{const {error}=await sb.auth.signInWithPassword({email:em.value,password:pw.value});error?alert('Email atau kata sandi salah.'):home();};}
+ document.getElementById('go').onclick=async()=>{const {error}=await sb.auth.signInWithPassword({email:em.value,password:pw.value});error?alert('Gagal masuk: '+error.message):home();};}
 async function home(){
   const [o,t]=await Promise.all([sb.from('orders').select('*,items(id,file_path)').order('created_at',{ascending:false}),sb.from('templates').select('*').order('id')]);
   TPL=t.data||[];const L=o.data||[];
